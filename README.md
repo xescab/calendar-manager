@@ -11,6 +11,7 @@ To work with Google Calendar and  Google Sheet, you first need to get some crede
 Then, install all necessary packages using a virtualenv (see https://docs.python-guide.org/dev/virtualenvs/).
 
 ```bash
+sudo apt install python-pip
 pip install --user pipenv
 pipenv install gspread
 pipenv install oauth2client
