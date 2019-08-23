@@ -4,6 +4,18 @@ import calendar
 from oauth2client.service_account import ServiceAccountCredentials
 
 
+def merge_weeks(dict_list):
+    """
+    Given any number of dicts, shallow copy and merge into a new dict,
+    precedence goes to key value pairs in latter dicts.
+    """
+    result = {}
+    for dictionary in dict_list:
+        result.update(dictionary)
+    del result['week_number']
+    return result
+
+
 def open_calendar_worksheet(calendar_file_name, calendar_school_period):
     """Returns a gspread worksheet from file `calendar_file_name` containing
     a calendar for `calendar_school_period` using credentials in `creds.json`.
@@ -64,6 +76,15 @@ def read_month(cal, calendar_school_period, month_name):
                 week_dict[day_number] = day_caregiver
         month_dict['weeks'].append(week_dict)
 
+    month_dict['days'] = merge_weeks(month_dict['weeks'])
+
+    month_dict['caregivers'] = {}
+    for day, caregiver in month_dict['days'].iteritems():
+        if caregiver in month_dict['caregivers'].keys():
+            month_dict['caregivers'][caregiver] += 1
+        else:
+            month_dict['caregivers'][caregiver] = 1
+
     return month_dict
 
 
@@ -89,8 +110,6 @@ def main():
 
     print "Monthly distribution"
     print json.dumps(read_month(cal, calendar_school_period, 'August'), sort_keys=True, indent=4)
-
-    # TODO list complete and school days per caregiver
 
 
 if __name__ == "__main__":
