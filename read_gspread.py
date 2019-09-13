@@ -56,7 +56,7 @@ def read_month(cal, calendar_school_period, month_name):
     year = int(get_year(calendar_school_period, month_name))
 
     # Informative
-    print calendar.month(year, month_number)
+    print(calendar.month(year, month_number))
 
     # Initiliaze data structure
     month_dict = { 'month': month_number, 'year': year, 'weeks': [] }
@@ -79,7 +79,7 @@ def read_month(cal, calendar_school_period, month_name):
     month_dict['days'] = merge_weeks(month_dict['weeks'])
 
     month_dict['caregivers'] = {}
-    for day, caregiver in month_dict['days'].iteritems():
+    for day, caregiver in month_dict['days'].items():
         if caregiver in month_dict['caregivers'].keys():
             month_dict['caregivers'][caregiver] += 1
         else:
@@ -96,7 +96,7 @@ def main():
 
     cal = open_calendar_worksheet(calendar_file_name, calendar_school_period)
 
-    print "Opened calendar for school period {} from {}".format(calendar_school_period, calendar_file_name)
+    print("Opened calendar for school period {} from {}".format(calendar_school_period, calendar_file_name))
 
     # Get number of days with custody
     # - We substract the cell that is used as legend in the sheet
@@ -105,11 +105,11 @@ def main():
     school_days_A = len(cal.findall('A')) - 1
     school_days_X = len(cal.findall('X')) - 1
 
-    print '  A has {} complete days and {} school days'.format(complete_days_A, school_days_A)
-    print '  X has {} complete days and {} school days'.format(complete_days_X, school_days_X)
+    print('  A has {} complete days and {} school days'.format(complete_days_A, school_days_A))
+    print('  X has {} complete days and {} school days'.format(complete_days_X, school_days_X))
 
-    print "Monthly distribution"
-    print json.dumps(read_month(cal, calendar_school_period, 'August'), sort_keys=True, indent=4)
+    print("Monthly distribution")
+    print(json.dumps(read_month(cal, calendar_school_period, 'August'), sort_keys=True, indent=4))
 
 
 if __name__ == "__main__":
