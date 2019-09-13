@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, time
 from cal_setup import get_calendar_service
 from read_gspread import get_month_number
 
@@ -15,55 +15,107 @@ def get_event_summary(event_type, caregiver):
 
     if event_type == 'custody_day':
 
-        if caregiver == 'X':
-            summary = 'School day with Dad'
-        elif caregiver == 'XD':
-            summary = 'Non-School day with Dad'
-        elif caregiver == 'A':
-            summary = 'School day with Mum'
-        elif caregiver == 'AD':
-            summary = 'Non-School day with Mum'
+        if 'X' in caregiver:
+            summary = 'Dad'
+        elif 'A' in caregiver:
+            summary = 'Mum'
+
+    elif event_type == 'music':
+        summary = 'Music'
+
+    elif event_type == 'swimming':
+        summary = 'Swimming pool'
+
+    elif event_type == 'theatre':
+        summary = 'Theatre'
 
     return summary
 
 
-def get_event_start(event_type, event_datetime):
+def get_event_description(event_type, caregiver):
+    """
+    Returns an event description depending on `event_type` and `caregiver`.
+    """
+    description = 'Event type {} not defined'.format(event_type)
+
+    if event_type == 'custody_day':
+
+        if caregiver == 'X':
+            description = 'School day with Dad'
+        elif caregiver == 'XD':
+            description = 'Non-School day with Dad'
+        elif caregiver == 'A':
+            description = 'School day with Mum'
+        elif caregiver == 'AD':
+            description = 'Non-School day with Mum'
+
+    elif event_type == 'music':
+        description = 'Music class'
+
+    elif event_type == 'swimming':
+        description = 'Swimming pool class'
+
+    elif event_type == 'theatre':
+        description = 'Theatre class'
+
+    return description
+
+
+def get_event_start(event_type, event_date):
     """
     Returns the start nested object based on `event_type` and the event date.
     """
-    start = { "date": event_datetime.isoformat(), "timeZone": TIMEZONE }
+    start = { "date": event_date.isoformat(), "timeZone": TIMEZONE }
 
     if event_type == 'custody_day':
-        start = { "date": event_datetime.isoformat(), "timeZone": TIMEZONE }
+        start = { "date": event_date.isoformat(), "timeZone": TIMEZONE }
+    elif event_type == 'music':
+        start = { "dateTime": datetime.combine(event_date, time(16,30)).isoformat(), "timeZone": TIMEZONE }
+    elif event_type == 'theatre':
+        start = { "dateTime": datetime.combine(event_date, time(16,30)).isoformat(), "timeZone": TIMEZONE }
+    elif event_type == 'swimming':
+        start = { "dateTime": datetime.combine(event_date, time(16,30)).isoformat(), "timeZone": TIMEZONE }
 
     return start
 
 
-def get_event_end(event_type, event_datetime):
+def get_event_end(event_type, event_date):
     """
     Returns the end nested object based on `event_type` and the event date.
     """
-    end = { "date": event_datetime.isoformat(), "timeZone": TIMEZONE }
+    end = { "date": event_date.isoformat(), "timeZone": TIMEZONE }
 
     if event_type == 'custody_day':
-        end = { "date": event_datetime.isoformat(), "timeZone": TIMEZONE }
+        end = { "date": event_date.isoformat(), "timeZone": TIMEZONE }
+    elif event_type == 'music':
+        end = { "dateTime": datetime.combine(event_date, time(17,30)).isoformat(), "timeZone": TIMEZONE }
+    elif event_type == 'theatre':
+        end = { "dateTime": datetime.combine(event_date, time(17,30)).isoformat(), "timeZone": TIMEZONE }
+    elif event_type == 'swimming':
+        end = { "dateTime": datetime.combine(event_date, time(18,20)).isoformat(), "timeZone": TIMEZONE }
 
     return end
 
 
-def create_event(service, event_type, year, month, day, caregiver, hour=None, minute=None):
+def get_activity(event_date):
+    weekday = event_date.weekday()
+    if weekday == 0:    # Monday
+        return 'music'
+    elif weekday == 1:  # Tuesday
+        return 'swimming'
+    elif weekday == 3:  # Thursday
+        return 'theatre'
+    return None
 
-    if hour and minute:
-        event_datetime = datetime(year, month, day, hour, minute)
-    else:
-        event_datetime = date(year, month, day)
+
+def create_event(service, event_type, event_date, caregiver):
 
     event_result = service.events().insert(calendarId=CALENDAR,
         body={
             "summary": get_event_summary(event_type, caregiver),
-            "description": get_event_summary(event_type, caregiver),
-            "start": get_event_start(event_type, event_datetime),
-            "end": get_event_end(event_type, event_datetime),
+            "description": get_event_description(event_type, caregiver),
+            "start": get_event_start(event_type, event_date),
+            "end": get_event_end(event_type, event_date),
         }
     ).execute()
 
@@ -81,16 +133,23 @@ if __name__ == '__main__':
 
     month_dict = {
       'days': {
-        12: 'A',
-        13: 'X',
-        14: 'XD',
-        15: 'XD',
         16: 'A',
+        17: 'A',
+        18: 'X',
+        19: 'A',
+        20: 'A',
+        21: 'AD',
+        22: 'AD',
       }
     }
 
     service = get_calendar_service()
 
     for day, caregiver in month_dict['days'].items():
-        create_event(service, 'custody_day', year, month, day, caregiver)
+        event_date = date(year, month, day)
+        create_event(service, 'custody_day', event_date, caregiver)
+        activity = get_activity(event_date)
+        if activity:
+            create_event(service, activity, event_date, caregiver)
+
 
