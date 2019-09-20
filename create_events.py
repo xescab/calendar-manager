@@ -7,24 +7,31 @@ TIMEZONE = 'Europe/Madrid'
 CALENDAR = '0nv7r8l3d0h9vp2av45nudjj5s@group.calendar.google.com'
 
 
-def get_event_summary(event_type, caregiver):
+def is_schoolday(caregiver_code):
+    return 'D' not in caregiver_code
+
+
+def get_event_caregiver(caregiver_code):
+    if 'X' in caregiver_code:
+        return 'Dad'
+    elif 'A' in caregiver_code:
+        return 'Mum'
+
+
+def get_event_summary(event_type, caregiver_code):
     """
-    Returns an event summary depending on `event_type` and `caregiver`.
+    Returns an event summary depending on `event_type` and `caregiver_code`.
     """
     summary = 'Event type {} not defined'.format(event_type)
 
     if event_type == 'custody_day':
-
-        if 'X' in caregiver:
-            summary = 'Dad'
-        elif 'A' in caregiver:
-            summary = 'Mum'
+        summary = get_event_caregiver(caregiver_code)
 
     elif event_type == 'music':
         summary = 'Music'
 
     elif event_type == 'swimming':
-        summary = 'Swimming pool'
+        summary = 'Swimming'
 
     elif event_type == 'theatre':
         summary = 'Theatre'
@@ -32,21 +39,21 @@ def get_event_summary(event_type, caregiver):
     return summary
 
 
-def get_event_description(event_type, caregiver):
+def get_event_description(event_type, caregiver_code):
     """
-    Returns an event description depending on `event_type` and `caregiver`.
+    Returns an event description depending on `event_type` and `caregiver_code`.
     """
     description = 'Event type {} not defined'.format(event_type)
 
     if event_type == 'custody_day':
 
-        if caregiver == 'X':
+        if caregiver_code == 'X':
             description = 'School day with Dad'
-        elif caregiver == 'XD':
+        elif caregiver_code == 'XD':
             description = 'Non-School day with Dad'
-        elif caregiver == 'A':
+        elif caregiver_code == 'A':
             description = 'School day with Mum'
-        elif caregiver == 'AD':
+        elif caregiver_code == 'AD':
             description = 'Non-School day with Mum'
 
     elif event_type == 'music':
@@ -108,22 +115,49 @@ def get_activity(event_date):
     return None
 
 
-def create_event(service, event_type, event_date, caregiver):
+def get_event_id(service, event_date, event_summary):
+    """Look for existing events with `event_summary` on `event_date`
+    """
+    events_result = service.events().list(calendarId=CALENDAR,
+                                        timeMin=datetime.combine(event_date, time(0,0)).isoformat() + 'Z',
+                                        timeMax=datetime.combine(event_date, time(23,59)).isoformat() + 'Z',
+                                        maxResults=10, singleEvents=True,
+                                        orderBy='startTime').execute()
+    events = events_result.get('items', [])
 
-    event_result = service.events().insert(calendarId=CALENDAR,
-        body={
-            "summary": get_event_summary(event_type, caregiver),
-            "description": get_event_description(event_type, caregiver),
-            "start": get_event_start(event_type, event_date),
-            "end": get_event_end(event_type, event_date),
-        }
-    ).execute()
+    for event in events:
+        if event['summary'] == event_summary:
+            print("Found similar event '{}' with id {} created by {}".format(event['summary'], event['id'], event['creator']['email']))
+            return event['id']
 
-    print("created event")
+    return None
+
+
+def create_event(service, event_type, event_date, caregiver_code):
+
+    # Get existing event_id
+    event_summary = get_event_summary(event_type, caregiver_code)
+    event_id = get_event_id(service, event_date, event_summary)
+
+    # Define body of event
+    event_body={
+        "summary": event_summary,
+        "description": get_event_description(event_type, caregiver_code),
+        "start": get_event_start(event_type, event_date),
+        "end": get_event_end(event_type, event_date),
+    }
+
+    if event_id:
+        event_result = service.events().update(calendarId=CALENDAR, eventId=event_id, body=event_body).execute()
+    else:
+        event_result = service.events().insert(calendarId=CALENDAR, body=event_body).execute()
+
+    print("created/updated event")
     print("id: ", event_result['id'])
     print("summary: ", event_result['summary'])
     print("starts at: ", event_result['start'])
     print("ends at: ", event_result['end'])
+    print("")
 
 
 if __name__ == '__main__':
@@ -140,16 +174,26 @@ if __name__ == '__main__':
         20: 'A',
         21: 'AD',
         22: 'AD',
+        23: 'X',
+        24: 'XD',
       }
     }
 
     service = get_calendar_service()
 
-    for day, caregiver in month_dict['days'].items():
+    for day, caregiver_code in month_dict['days'].items():
         event_date = date(year, month, day)
-        create_event(service, 'custody_day', event_date, caregiver)
-        activity = get_activity(event_date)
-        if activity:
-            create_event(service, activity, event_date, caregiver)
+        event_caregiver = get_event_caregiver(caregiver_code)
 
+        print("{}'s caregiver is {}".format(event_date, event_caregiver))
+        create_event(service, 'custody_day', event_date, caregiver_code)
 
+        if is_schoolday(caregiver_code):
+            print("{} is a school day. Creating activity and transport events.\n".format(event_date))
+            #create_event_transport_morning
+            activity = get_activity(event_date)
+            if activity:
+                create_event(service, activity, event_date, caregiver_code)
+                #create_event_transport_evening
+        else:
+            print("{} is NOT a school day. Skipping activity and transport events.\n".format(event_date))
