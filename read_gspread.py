@@ -2,6 +2,7 @@ import json
 import gspread
 import calendar
 from oauth2client.service_account import ServiceAccountCredentials
+from events import EventTemplate
 
 
 def merge_weeks(dict_list):
@@ -91,7 +92,37 @@ def read_month(cal, calendar_school_period, month_name):
 def get_events(cal):
     """Reads event configuration from worksheet `cal` and returns a list with event types.
     """
-    return None
+    events_cell = cal.find('Event templates')
+    events_list = []
+
+    key_col = events_cell.col
+    name_col = cal.find('Summary').col
+    desc_col = cal.find('Description').col
+    start_col = cal.find('Start').col
+    end_col = cal.find('End').col
+    caregivers_col = cal.find('Apply to caregivers').col
+    weekdays_col = cal.find('Apply to weekdays').col
+
+    row = events_cell.row + 1
+    while True:
+        event_key = cal.cell(row, key_col).value
+
+        if event_key == "":
+            print("No more event templates")
+            break
+
+        print("Found template: {}".format(event_key))
+        summary = cal.cell(row, name_col).value
+        desc = cal.cell(row, desc_col).value
+        caregivers = cal.cell(row, caregivers_col).value.split(",")
+        weekdays = cal.cell(row, weekdays_col).value.split(",")
+        start = cal.cell(row, start_col).value
+        end = cal.cell(row, end_col).value
+
+        events_list.append(EventTemplate(event_key, summary, desc, caregivers, weekdays, start, end))
+        row = row + 1
+
+    return events_list
 
 
 def get_caregivers(cal):
@@ -145,8 +176,17 @@ def test_get_caregivers():
     print(get_caregivers(cal))
 
 
+def test_get_events():
+    calendar_file_name = 'Calendario de custodia compartida Elena'
+    calendar_school_period = '2019-2020'
+
+    cal = open_calendar_worksheet(calendar_file_name, calendar_school_period)
+    print("Opened calendar for school period {} from {}".format(calendar_school_period, calendar_file_name))
+    for event_tmpl in get_events(cal):
+        print(event_tmpl)
+
 
 if __name__ == "__main__":
     #main()
-    test_get_caregivers()
-
+    #test_get_caregivers()
+    test_get_events()
