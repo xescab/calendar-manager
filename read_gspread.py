@@ -88,6 +88,30 @@ def read_month(cal, calendar_school_period, month_name):
     return month_dict
 
 
+def get_events(cal):
+    """Reads event configuration from worksheet `cal` and returns a list with event types.
+    """
+    return None
+
+
+def get_caregivers(cal):
+    """Reads caregiver codes and names to use for custody days and events.
+    """
+    caregivers_cell = cal.find('Caregivers')
+    caregivers_list = []
+
+    i = 1
+    while True:
+        next_caregiver_code = cal.cell(caregivers_cell.row + i, caregivers_cell.col).value
+        if next_caregiver_code != "":
+            caregivers_list.append({ "caregiver_code": next_caregiver_code, "caregiver_name": cal.cell(caregivers_cell.row + i, caregivers_cell.col + 1).value})
+            i = i + 1
+        else:
+            break
+
+    return caregivers_list
+
+
 def main():
     "Demo code to read and print data from the calendar"
 
@@ -112,5 +136,17 @@ def main():
     print(json.dumps(read_month(cal, calendar_school_period, 'August'), sort_keys=True, indent=4))
 
 
+def test_get_caregivers():
+    calendar_file_name = 'Calendario de custodia compartida Elena'
+    calendar_school_period = '2019-2020'
+
+    cal = open_calendar_worksheet(calendar_file_name, calendar_school_period)
+    print("Opened calendar for school period {} from {}".format(calendar_school_period, calendar_file_name))
+    print(get_caregivers(cal))
+
+
+
 if __name__ == "__main__":
-    main()
+    #main()
+    test_get_caregivers()
+
