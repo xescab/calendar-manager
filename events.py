@@ -6,7 +6,7 @@ class EventTemplate:
         self.name = name
         self.summary = summary
         self.description = description
-        self.weekdays = weekdays
+        self.weekdays = [int(wk) for wk in weekdays]
         self.caregivers = caregivers
         if ":" in start_time:
             self.start_time = datetime.strptime(start_time, '%H:%M').time()

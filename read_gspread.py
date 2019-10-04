@@ -3,6 +3,7 @@ import gspread
 import calendar
 from oauth2client.service_account import ServiceAccountCredentials
 from events import EventTemplate
+from time import sleep
 
 
 def merge_weeks(dict_list):
@@ -89,7 +90,7 @@ def read_month(cal, calendar_school_period, month_name):
     return month_dict
 
 
-def get_events(cal):
+def get_event_templates(cal):
     """Reads event configuration from worksheet `cal` and returns a list with event types.
     """
     events_cell = cal.find('Event templates')
@@ -111,7 +112,6 @@ def get_events(cal):
             print("No more event templates")
             break
 
-        print("Found template: {}".format(event_key))
         summary = cal.cell(row, name_col).value
         desc = cal.cell(row, desc_col).value
         caregivers = cal.cell(row, caregivers_col).value.split(",")
@@ -119,7 +119,10 @@ def get_events(cal):
         start = cal.cell(row, start_col).value
         end = cal.cell(row, end_col).value
 
-        events_list.append(EventTemplate(event_key, summary, desc, caregivers, weekdays, start, end))
+        event_tmpl = EventTemplate(event_key, summary, desc, caregivers, weekdays, start, end)
+        print("Found template: {}".format(event_tmpl))
+        events_list.append(event_tmpl)
+        sleep(10)
         row = row + 1
 
     return events_list
@@ -176,17 +179,17 @@ def test_get_caregivers():
     print(get_caregivers(cal))
 
 
-def test_get_events():
+def test_get_event_templates():
     calendar_file_name = 'Calendario de custodia compartida Elena'
     calendar_school_period = '2019-2020'
 
     cal = open_calendar_worksheet(calendar_file_name, calendar_school_period)
     print("Opened calendar for school period {} from {}".format(calendar_school_period, calendar_file_name))
-    for event_tmpl in get_events(cal):
+    for event_tmpl in get_event_templates(cal):
         print(event_tmpl)
 
 
 if __name__ == "__main__":
     #main()
     #test_get_caregivers()
-    test_get_events()
+    test_get_event_templates()

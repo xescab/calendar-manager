@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, date, time
 from cal_setup import get_calendar_service
-from read_gspread import open_calendar_worksheet, read_month
+from read_gspread import open_calendar_worksheet, read_month, get_event_templates
 
 # https://developers.google.com/calendar/v3/reference/events
 TIMEZONE = 'Europe/Madrid'
@@ -48,9 +48,13 @@ def get_event_id(service, event_type, event_date):
     events = events_result.get('items', [])
 
     for event in events:
-        if event['summary'] == event_type.summary:
-            print("Found existing event '{}' with id {} created by {}".format(event['summary'], event['id'], event['creator']['email']))
-            return event['id']
+        try:
+            if event['extendedProperties']['private']['template_name'] == event_type.name:
+                print("Found existing event '{}' with id {} created by {}".format(event['summary'], event['id'], event['creator']['email']))
+                return event['id']
+
+        except KeyError:
+            continue
 
     return None
 
@@ -58,6 +62,7 @@ def get_event_id(service, event_type, event_date):
 def create_event(service, event_type, event_date):
 
     event_body={
+        "extendedProperties": { "private": { "template_name": event_type.name } },
         "summary": event_type.summary,
         "description": event_type.description,
         "start": all_day_event(event_date) if event_type.all_day else event_datetime(event_date, event_type.start_time),
@@ -78,74 +83,28 @@ def create_event(service, event_type, event_date):
     print("summary: ", event_result['summary'])
     print("starts at: ", event_result['start'])
     print("ends at: ", event_result['end'])
+    print("DEBUG: ", event_result)
 
 
-def schedule_events(year, month, custody_days):
-
-    # Define event types
-    # TODO: include this configuration in Google spreadsheet
-    schoolday_mum = EventType('Mum','School day with Mum')
-    schoolday_dad = EventType('Dad','School day with Dad')
-    nonschoolday_mum = EventType('Mum','Non-School day with Mum')
-    nonschoolday_dad = EventType('Dad','Non-School day with Dad')
-    act_music = EventType('Music','Music class',time(16,30),time(17,30))
-    act_swimming = EventType('Swimming','Swimming pool',time(16,30),time(18,20))
-    act_theatre = EventType('Theatre','Theatre class',time(16,30),time(17,30))
-    transport_morning = EventType('Ruta 5','Ruta 5 7:45',time(7,40),time(7,50))
-    transport_afternoon = EventType('Ruta 3','Ruta 3 17:32',time(17,20),time(17,40))
-    transport_activity = EventType('Ruta A','Ruta A 18:53',time(18,50),time(19,0))
-    pickup_at_pool = EventType('Pickup','Pickup at pool',time(18,20),time(18,30))
-    pickup_at_school = EventType('Pickup','Pickup at school',time(16,0),time(17,0))
-
+def schedule_events(year, month, custody_days, event_templates):
 
     cal = get_calendar_service()
 
     for day, caregiver_code in custody_days.items():
         event_date = date(year, month, day)
         caregiver = get_caregiver_name(caregiver_code)
+        weekday = event_date.weekday()
 
-        print("Schedule events for {}. Caregiver is {}.".format(event_date,caregiver))
+        print("Schedule events for {}. Caregiver is {}. Weekday is {}".format(event_date, caregiver, weekday))
 
-        if is_schoolday(caregiver_code):
-            print("It is a school day. We will sechedule activity and transport events.".format(event_date))
-
-            if caregiver == 'Mum':
-                create_event(cal,schoolday_mum,event_date)
-            else:
-                create_event(cal,schoolday_dad,event_date)
-
-            create_event(cal,transport_morning,event_date)
-
-            weekday = event_date.weekday()
-
-            if weekday == 0:    # Monday
-                create_event(cal,act_music,event_date)
-                create_event(cal,transport_activity,event_date)
-
-            elif weekday == 1:  # Tuesday
-                create_event(cal,act_swimming,event_date)
-                create_event(cal,pickup_at_pool,event_date)
-
-            elif weekday == 2:  # Wednesday
-                if caregiver == 'Mum':
-                    create_event(cal,transport_afternoon,event_date)
-                else:
-                    create_event(cal,pickup_at_school,event_date)
-
-            elif weekday == 3:  # Thursday
-                create_event(cal,act_theatre,event_date)
-                create_event(cal,transport_activity,event_date)
-
-            elif weekday == 4:  # Friday
-                create_event(cal,transport_afternoon,event_date)
-
-        else:
-            print("It is NOT a school day. We will skip activity and transport events.".format(event_date))
-
-            if caregiver == 'Mum':
-                create_event(cal,nonschoolday_mum,event_date)
-            else:
-                create_event(cal,nonschoolday_dad,event_date)
+        # Schedule events for templates that match current weekday and caregiver
+        for event_tmpl in event_templates:
+            print(event_tmpl)
+            if weekday in event_tmpl.weekdays:
+                print("{} matches weekday {}".format(event_tmpl.name, weekday))
+                if caregiver_code in event_tmpl.caregivers:
+                    print("{} matches caregiver {}".format(event_tmpl.name, caregiver_code))
+                    create_event(cal, event_tmpl, event_date)
 
         print("-----------------------------------------------")
 
@@ -174,7 +133,13 @@ def schedule_events_from_testdata():
       }
     }
 
-    schedule_events(year, month, month_dict['days'])
+    calendar_file_name = 'Calendario de custodia compartida Elena'
+    calendar_school_period = '2019-2020'
+
+    cal_sheet = open_calendar_worksheet(calendar_file_name, calendar_school_period)
+    event_templates = get_event_templates(cal_sheet)
+
+    schedule_events(year, month, month_dict['days'], event_templates)
 
 
 def schedule_events_from_spreadsheet():
@@ -183,11 +148,12 @@ def schedule_events_from_spreadsheet():
     calendar_school_period = '2019-2020'
     month_name = 'September'
 
-    cal = open_calendar_worksheet(calendar_file_name, calendar_school_period)
+    cal_sheet = open_calendar_worksheet(calendar_file_name, calendar_school_period)
 
-    month_data = read_month(cal, calendar_school_period, month_name)
+    month_data = read_month(cal_sheet, calendar_school_period, month_name)
+    event_templates = get_event_templates(cal_sheet)
 
-    schedule_events(month_data['year'], month_data['month'], month_data['days'])
+    schedule_events(month_data['year'], month_data['month'], month_data['days'], event_templates)
 
 
 if __name__ == '__main__':
