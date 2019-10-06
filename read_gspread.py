@@ -58,6 +58,7 @@ def read_month(cal, calendar_school_period, month_name):
     year = int(get_year(calendar_school_period, month_name))
 
     # Informative
+    print("Getting {} custody days from spreadsheet ...".format(month_name))
     print(calendar.month(year, month_number))
 
     # Initiliaze data structure
@@ -73,10 +74,11 @@ def read_month(cal, calendar_school_period, month_name):
         week_dict = { 'week_number': week_number }
         for day_idx in range(1,8):
             day_number = cal.cell(week_row, month_col + day_idx).value
-            if day_number != '':
-                day_caregiver =  cal.cell(week_row + 1, month_col + day_idx).value
-                week_dict[day_number] = day_caregiver
+            if day_number != '' and day_number != ' ':
+                day_caregiver = cal.cell(week_row + 1, month_col + day_idx).value
+                week_dict[int(day_number)] = day_caregiver
         month_dict['weeks'].append(week_dict)
+        sleep(5)
 
     month_dict['days'] = merge_weeks(month_dict['weeks'])
 
@@ -104,6 +106,7 @@ def get_event_templates(cal):
     caregivers_col = cal.find('Apply to caregivers').col
     weekdays_col = cal.find('Apply to weekdays').col
 
+    print("Looking for event templates on spreadsheet ...")
     row = events_cell.row + 1
     while True:
         event_key = cal.cell(row, key_col).value

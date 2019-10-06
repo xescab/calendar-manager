@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta, date, time
 from cal_setup import get_calendar_service
 from read_gspread import open_calendar_worksheet, read_month, get_event_templates
@@ -83,7 +84,7 @@ def create_event(service, event_type, event_date):
     print("summary: ", event_result['summary'])
     print("starts at: ", event_result['start'])
     print("ends at: ", event_result['end'])
-    print("DEBUG: ", event_result)
+    #print("DEBUG: ", event_result)
 
 
 def schedule_events(year, month, custody_days, event_templates):
@@ -146,16 +147,17 @@ def schedule_events_from_spreadsheet():
 
     calendar_file_name = 'Calendario de custodia compartida Elena'
     calendar_school_period = '2019-2020'
-    month_name = 'September'
+    month_name = 'October'
 
     cal_sheet = open_calendar_worksheet(calendar_file_name, calendar_school_period)
 
-    month_data = read_month(cal_sheet, calendar_school_period, month_name)
     event_templates = get_event_templates(cal_sheet)
+    month_data = read_month(cal_sheet, calendar_school_period, month_name)
+    print(json.dumps(month_data, sort_keys=True, indent=4))
 
     schedule_events(month_data['year'], month_data['month'], month_data['days'], event_templates)
 
 
 if __name__ == '__main__':
 
-    schedule_events_from_testdata()
+    schedule_events_from_spreadsheet()
