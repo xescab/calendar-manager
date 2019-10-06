@@ -92,7 +92,7 @@ def schedule_events(year, month, custody_days, event_templates):
     cal = get_calendar_service()
 
     for day, caregiver_code in custody_days.items():
-        event_date = date(year, month, day)
+        event_date = date(year, month, int(day))
         caregiver = get_caregiver_name(caregiver_code)
         weekday = event_date.weekday()
 

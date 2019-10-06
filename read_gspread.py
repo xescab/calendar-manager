@@ -76,7 +76,7 @@ def read_month(cal, calendar_school_period, month_name):
             day_number = cal.cell(week_row, month_col + day_idx).value
             if day_number != '' and day_number != ' ':
                 day_caregiver = cal.cell(week_row + 1, month_col + day_idx).value
-                week_dict[int(day_number)] = day_caregiver
+                week_dict[day_number] = day_caregiver
         month_dict['weeks'].append(week_dict)
         sleep(5)
 
