@@ -36,10 +36,11 @@ def get_event_id(service, event_template, event_date):
     for event in events:
         try:
             if event['extendedProperties']['private']['template_name'] == event_template.name:
-                print("Found existing event '{}' with id {} created by {}".format(event['summary'], event['id'], event['creator']['email']))
+                print("Found event '{}' with id {} created by {}".format(event['summary'], event['id'], event['creator']['email']))
                 return event['id']
 
         except KeyError:
+            # skip manually created events which will not have the extendedProperty template_name
             continue
 
     return None
@@ -72,6 +73,18 @@ def create_event(service, event_template, event_date):
     #print("DEBUG: ", event_result)
 
 
+def delete_event(service, event_template, event_date):
+    """Delete event created on `event_date` based on `event_template`.
+    """
+    event_id = get_event_id(service, event_template, event_date)
+
+    if event_id:
+        print("Deleting event '{}' with id {} ...".format(event_template.summary, event_id))
+        event_result = service.events().delete(calendarId=CALENDAR, eventId=event_id).execute()
+    else:
+        print("DEBUG: Event '{}' not found. Not deleted.".format(event_template.summary))
+
+
 def schedule_events(year, month, custody_days, event_templates):
 
     cal = get_calendar_service()
@@ -86,11 +99,13 @@ def schedule_events(year, month, custody_days, event_templates):
         # Schedule events for templates that match current weekday and caregiver
         for event_tmpl in event_templates:
             print(event_tmpl)
-            if weekday in event_tmpl.weekdays:
-                print("{} matches weekday {}".format(event_tmpl.name, weekday))
-                if caregiver_code in event_tmpl.caregivers:
-                    print("{} matches caregiver {}".format(event_tmpl.name, caregiver_code))
-                    create_event(cal, event_tmpl, event_date)
+            if weekday in event_tmpl.weekdays and caregiver_code in event_tmpl.caregivers:
+                print("DEBUG: {} matches weekday {}".format(event_tmpl.name, weekday))
+                print("DEBUG: {} matches caregiver {}".format(event_tmpl.name, caregiver_code))
+                create_event(cal, event_tmpl, event_date)
+            else:
+                print("DEBUG: {} does not match weekday {} or caregiver {}".format(event_tmpl.name, weekday, caregiver_code))
+                delete_event(cal, event_tmpl, event_date)
 
         print("-----------------------------------------------")
 
