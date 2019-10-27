@@ -8,21 +8,6 @@ TIMEZONE = 'Europe/Madrid'
 CALENDAR = '0nv7r8l3d0h9vp2av45nudjj5s@group.calendar.google.com'
 
 
-class EventType:
-
-    def __init__(self, summary, description, start_time=None, end_time=None):
-        self.summary = summary
-        self.description = description
-        self.start_time = start_time
-        self.end_time = end_time
-        self.all_day = not start_time or not end_time
-
-
-
-def is_schoolday(caregiver_code):
-    return 'D' not in caregiver_code
-
-
 def get_caregiver_name(caregiver_code):
     if 'X' in caregiver_code:
         return 'Dad'
@@ -38,7 +23,7 @@ def event_datetime(event_date, event_time):
     return { "dateTime": datetime.combine(event_date, event_time).isoformat(), "timeZone": TIMEZONE }
 
 
-def get_event_id(service, event_type, event_date):
+def get_event_id(service, event_template, event_date):
     """Look for existing events with `event_summary` on `event_date`
     """
     events_result = service.events().list(calendarId=CALENDAR,
@@ -50,7 +35,7 @@ def get_event_id(service, event_type, event_date):
 
     for event in events:
         try:
-            if event['extendedProperties']['private']['template_name'] == event_type.name:
+            if event['extendedProperties']['private']['template_name'] == event_template.name:
                 print("Found existing event '{}' with id {} created by {}".format(event['summary'], event['id'], event['creator']['email']))
                 return event['id']
 
@@ -60,18 +45,18 @@ def get_event_id(service, event_type, event_date):
     return None
 
 
-def create_event(service, event_type, event_date):
+def create_event(service, event_template, event_date):
 
     event_body={
-        "extendedProperties": { "private": { "template_name": event_type.name } },
-        "summary": event_type.summary,
-        "description": event_type.description,
-        "start": all_day_event(event_date) if event_type.all_day else event_datetime(event_date, event_type.start_time),
-        "end": all_day_event(event_date) if event_type.all_day else event_datetime(event_date, event_type.end_time),
+        "extendedProperties": { "private": { "template_name": event_template.name } },
+        "summary": event_template.summary,
+        "description": event_template.description,
+        "start": all_day_event(event_date) if event_template.all_day else event_datetime(event_date, event_template.start_time),
+        "end": all_day_event(event_date) if event_template.all_day else event_datetime(event_date, event_template.end_time),
     }
 
-    print("Scheduling event '{}' ...".format(event_type.summary))
-    event_id = get_event_id(service, event_type, event_date)
+    print("Scheduling event '{}' ...".format(event_template.summary))
+    event_id = get_event_id(service, event_template, event_date)
 
     if event_id:
         print("Updating existing event {} ...".format(event_id))
