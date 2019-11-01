@@ -135,18 +135,18 @@ def get_caregivers(cal):
     """Reads caregiver codes and names to use for custody days and events.
     """
     caregivers_cell = cal.find('Caregivers')
-    caregivers_list = []
+    caregivers_dict = {}
 
     i = 1
     while True:
         next_caregiver_code = cal.cell(caregivers_cell.row + i, caregivers_cell.col).value
         if next_caregiver_code != "":
-            caregivers_list.append({ "caregiver_code": next_caregiver_code, "caregiver_name": cal.cell(caregivers_cell.row + i, caregivers_cell.col + 1).value})
+            caregivers_dict[next_caregiver_code] = { "name": cal.cell(caregivers_cell.row + i, caregivers_cell.col + 1).value, "color": cal.cell(caregivers_cell.row + i, caregivers_cell.col + 2).value}
             i = i + 1
         else:
             break
 
-    return caregivers_list
+    return caregivers_dict
 
 
 def main():

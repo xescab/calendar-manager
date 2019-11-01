@@ -1,18 +1,18 @@
 import json
 from datetime import datetime, timedelta, date, time
 from cal_setup import get_calendar_service
-from read_gspread import open_calendar_worksheet, read_month, get_event_templates
+from read_gspread import open_calendar_worksheet, read_month, get_event_templates, get_caregivers
 
 # https://developers.google.com/calendar/v3/reference/events
 TIMEZONE = 'Europe/Madrid'
 CALENDAR = '0nv7r8l3d0h9vp2av45nudjj5s@group.calendar.google.com'
 
 
-def get_caregiver_name(caregiver_code):
-    if 'X' in caregiver_code:
-        return 'Dad'
-    elif 'A' in caregiver_code:
-        return 'Mum'
+def get_caregiver_name(caregiver_code, caregivers):
+    return caregivers[caregiver_code]['name']
+
+def get_caregiver_color(caregiver_code, caregivers):
+    return caregivers[caregiver_code]['color']
 
 
 def all_day_event(event_date):
@@ -46,7 +46,7 @@ def get_event_id(service, event_template, event_date):
     return None
 
 
-def create_event(service, event_template, event_date):
+def create_event(service, event_template, event_date, event_color):
 
     event_body={
         "extendedProperties": { "private": { "template_name": event_template.name } },
@@ -54,6 +54,7 @@ def create_event(service, event_template, event_date):
         "description": event_template.description,
         "start": all_day_event(event_date) if event_template.all_day else event_datetime(event_date, event_template.start_time),
         "end": all_day_event(event_date) if event_template.all_day else event_datetime(event_date, event_template.end_time),
+        "colorId": event_color,
     }
 
     print("Scheduling event '{}' ...".format(event_template.summary))
@@ -85,13 +86,14 @@ def delete_event(service, event_template, event_date):
         print("DEBUG: Event '{}' not found. Not deleted.".format(event_template.summary))
 
 
-def schedule_events(year, month, custody_days, event_templates):
+def schedule_events(year, month, custody_days, event_templates, caregivers):
 
     cal = get_calendar_service()
 
     for day, caregiver_code in custody_days.items():
         event_date = date(year, month, int(day))
-        caregiver = get_caregiver_name(caregiver_code)
+        caregiver = get_caregiver_name(caregiver_code,caregivers)
+        color = get_caregiver_color(caregiver_code,caregivers)
         weekday = event_date.weekday()
 
         print("Schedule events for {}. Caregiver is {}. Weekday is {}".format(event_date, caregiver, weekday))
@@ -102,7 +104,7 @@ def schedule_events(year, month, custody_days, event_templates):
             if weekday in event_tmpl.weekdays and caregiver_code in event_tmpl.caregivers:
                 print("DEBUG: {} matches weekday {}".format(event_tmpl.name, weekday))
                 print("DEBUG: {} matches caregiver {}".format(event_tmpl.name, caregiver_code))
-                create_event(cal, event_tmpl, event_date)
+                create_event(cal, event_tmpl, event_date, color)
             else:
                 print("DEBUG: {} does not match weekday {} or caregiver {}".format(event_tmpl.name, weekday, caregiver_code))
                 delete_event(cal, event_tmpl, event_date)
@@ -147,15 +149,16 @@ def schedule_events_from_spreadsheet():
 
     calendar_file_name = 'Calendario de custodia compartida Elena'
     calendar_school_period = '2019-2020'
-    month_name = 'October'
+    month_name = 'November'
 
     cal_sheet = open_calendar_worksheet(calendar_file_name, calendar_school_period)
 
+    caregivers = get_caregivers(cal_sheet)
     event_templates = get_event_templates(cal_sheet)
     month_data = read_month(cal_sheet, calendar_school_period, month_name)
     print(json.dumps(month_data, sort_keys=True, indent=4))
 
-    schedule_events(month_data['year'], month_data['month'], month_data['days'], event_templates)
+    schedule_events(month_data['year'], month_data['month'], month_data['days'], event_templates, caregivers)
 
 
 if __name__ == '__main__':
