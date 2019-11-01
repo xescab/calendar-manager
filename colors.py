@@ -1,10 +1,5 @@
 from cal_setup import get_calendar_service
 
-# https://developers.google.com/calendar/v3/reference/events
-TIMEZONE = 'Europe/Madrid'
-CALENDAR = '0nv7r8l3d0h9vp2av45nudjj5s@group.calendar.google.com'
-
-
 service = get_calendar_service()
 
 colors = service.colors().get().execute()
