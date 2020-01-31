@@ -9,6 +9,7 @@ verify_ssl = true
 oauth2client = "*"
 gspread = "*"
 pyopenssl = "*"
+click = "*"
 
 [requires]
 python_version = "2.7"
