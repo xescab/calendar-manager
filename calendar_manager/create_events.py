@@ -145,11 +145,7 @@ def schedule_events_from_testdata():
     schedule_events(year, month, month_dict['days'], event_templates)
 
 
-def schedule_events_from_spreadsheet():
-
-    calendar_file_name = 'Calendario de custodia compartida Elena'
-    calendar_school_period = '2019-2020'
-    month_name = 'November'
+def schedule_events_from_spreadsheet(calendar_file_name, calendar_school_period, month_name):
 
     cal_sheet = open_calendar_worksheet(calendar_file_name, calendar_school_period)
 
@@ -159,8 +155,3 @@ def schedule_events_from_spreadsheet():
     print(json.dumps(month_data, sort_keys=True, indent=4))
 
     schedule_events(month_data['year'], month_data['month'], month_data['days'], event_templates, caregivers)
-
-
-if __name__ == '__main__':
-
-    schedule_events_from_spreadsheet()

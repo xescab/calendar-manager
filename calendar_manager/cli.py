@@ -1,6 +1,7 @@
 import click
 import json
 import sys
+from create_events import schedule_events_from_spreadsheet
 
 @click.command()
 @click.option('--settings-filename', '-f', default="settings.json", 
@@ -28,6 +29,9 @@ def cli(settings_filename, month):
     print(f"Spreadsheet tab:     \t{settings['spreadsheet_tab']}")
 
     print(f"\nMonth to export:     \t{month}")
+
+    schedule_events_from_spreadsheet(settings['spreadsheet_filename'], settings['spreadsheet_tab'], month)
+
 
 if __name__ == '__main__':
     cli()

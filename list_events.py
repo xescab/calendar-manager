@@ -1,5 +1,5 @@
 import datetime
-from cal_setup import get_calendar_service
+from calendar_manager.cal_setup import get_calendar_service
 
 # FIXME change to variable
 CALENDAR = '0nv7r8l3d0h9vp2av45nudjj5s@group.calendar.google.com'

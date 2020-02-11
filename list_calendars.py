@@ -1,5 +1,5 @@
 # import datetime
-from cal_setup import get_calendar_service
+from calendar_manager.cal_setup import get_calendar_service
 
 def main():
     service = get_calendar_service()

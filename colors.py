@@ -1,4 +1,4 @@
-from cal_setup import get_calendar_service
+from calendar_manager.cal_setup import get_calendar_service
 
 service = get_calendar_service()
 
