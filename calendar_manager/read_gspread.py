@@ -2,7 +2,7 @@ import json
 import gspread
 import calendar
 from oauth2client.service_account import ServiceAccountCredentials
-from events import EventTemplate
+from calendar_manager.events import EventTemplate
 from time import sleep
 
 
@@ -42,13 +42,44 @@ def get_month_number(month_name):
 
 def get_year(calendar_school_period, month_name):
     """Returns the year of the month according to a custom school period, where
-    days from July and August are distributed at the beiginning of the school
+    days from July and August are distributed at the beginning of the school
     period.
     TODO: June is a special month split the weekend just after the school ends.
     """
     (first_year, second_year) = calendar_school_period.split('-')
     return first_year if month_name in ['July','August','September','October','December','November'] else second_year
 
+
+def find_cell(all_cells, keyword):
+    """Returns the (row, col) position of a cell which value matches keyword
+    or raises ValueError
+    """
+    for row in all_cells:
+        if keyword in row:
+            row_idx = all_cells.index(row)
+            col_idx = row.index(keyword)
+            print(f"Found {keyword} at row={row_idx}, column={col_idx}")
+            return (row_idx, col_idx)
+
+    raise ValueError(f"Cell with value '{keyword}' not found on sheet")
+
+
+def get_table(all_cells, keyword, x_size, y_size):
+    """Returns a (x_size * y_size) table starting from cell(x, y)
+    """
+    table = []
+
+    # y = row_idx, x = col_idx 
+    y, x = find_cell(all_cells, keyword)
+
+    for row in all_cells[y:y+y_size]:
+        print(row)
+        row_filtered = [c for c in row[x:x+x_size]]
+        print(row_filtered)
+        table.append(row_filtered)
+
+    print(table)
+    return table
 
 def read_month(cal, calendar_school_period, month_name):
     """Reads info from worksheet `cal` for a particular month and returns a
