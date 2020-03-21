@@ -148,10 +148,11 @@ def schedule_events_from_testdata():
 def schedule_events_from_spreadsheet(calendar_file_name, calendar_school_period, month_name):
 
     cal_sheet = open_calendar_worksheet(calendar_file_name, calendar_school_period)
+    all_cells = cal_sheet.get_all_values()
 
-    caregivers = get_caregivers(cal_sheet)
-    event_templates = get_event_templates(cal_sheet)
-    month_data = read_month(cal_sheet, calendar_school_period, month_name)
+    caregivers = get_caregivers(all_cells)
+    event_templates = get_event_templates(all_cells)
+    month_data = read_month(all_cells, calendar_school_period, month_name)
     print(json.dumps(month_data, sort_keys=True, indent=4))
 
     schedule_events(month_data['year'], month_data['month'], month_data['days'], event_templates, caregivers)

@@ -3,7 +3,6 @@ import gspread
 import calendar
 from oauth2client.service_account import ServiceAccountCredentials
 from calendar_manager.events import EventTemplate
-from time import sleep
 
 
 def merge_weeks(dict_list):
@@ -81,8 +80,9 @@ def get_table(all_cells, keyword, x_size, y_size):
     print(table)
     return table
 
-def read_month(cal, calendar_school_period, month_name):
-    """Reads info from worksheet `cal` for a particular month and returns a
+
+def read_month(all_cells, calendar_school_period, month_name):
+    """Reads info for a particular month from cells read on a worksheet and returns a
     dictionary with the distribution of days.
     """
     month_number = get_month_number(month_name)
@@ -94,22 +94,18 @@ def read_month(cal, calendar_school_period, month_name):
 
     # Initiliaze data structure
     month_dict = { 'month': month_number, 'year': year, 'weeks': [] }
-
-    cell_month = cal.find(month_name)
-    month_row = cell_month.row
-    month_col = cell_month.col
+    month_row, month_col = find_cell(all_cells, month_name)
 
     for week_idx in range(0,5):
         week_row = month_row + week_idx*2 + 1
-        week_number = cal.cell(week_row, month_col).value
+        week_number = all_cells[week_row][month_col]
         week_dict = { 'week_number': week_number }
         for day_idx in range(1,8):
-            day_number = cal.cell(week_row, month_col + day_idx).value
+            day_number = all_cells[week_row][month_col + day_idx]
             if day_number != '' and day_number != ' ':
-                day_caregiver = cal.cell(week_row + 1, month_col + day_idx).value
+                day_caregiver = all_cells[week_row + 1][month_col + day_idx]
                 week_dict[day_number] = day_caregiver
         month_dict['weeks'].append(week_dict)
-        sleep(5)
 
     month_dict['days'] = merge_weeks(month_dict['weeks'])
 
@@ -123,107 +119,51 @@ def read_month(cal, calendar_school_period, month_name):
     return month_dict
 
 
-def get_event_templates(cal):
-    """Reads event configuration from worksheet `cal` and returns a list with event types.
+def get_event_templates(all_cells):
+    """Reads event configuration from worksheet `all_cells` and returns a list with event types.
     """
-    events_cell = cal.find('Event templates')
+    key_row, key_col = find_cell(all_cells, 'Event templates')
     events_list = []
 
-    key_col = events_cell.col
-    name_col = cal.find('Summary').col
-    desc_col = cal.find('Description').col
-    start_col = cal.find('Start').col
-    end_col = cal.find('End').col
-    caregivers_col = cal.find('Apply to caregivers').col
-    weekdays_col = cal.find('Apply to weekdays').col
+    dummy, name_col = find_cell(all_cells, 'Summary')
+    dummy, desc_col = find_cell(all_cells, 'Description')
+    dummy, start_col = find_cell(all_cells, 'Start')
+    dummy, end_col = find_cell(all_cells, 'End')
+    dummy, caregivers_col = find_cell(all_cells, 'Apply to caregivers')
+    dummy, weekdays_col = find_cell(all_cells, 'Apply to weekdays')
 
     print("Looking for event templates on spreadsheet ...")
-    row = events_cell.row + 1
-    while True:
-        event_key = cal.cell(row, key_col).value
+    for row in all_cells[key_row+1:]:
+        event_key = row[key_col]
 
         if event_key == "":
             print("No more event templates")
             break
 
-        summary = cal.cell(row, name_col).value
-        desc = cal.cell(row, desc_col).value
-        caregivers = cal.cell(row, caregivers_col).value.split(",")
-        weekdays = cal.cell(row, weekdays_col).value.split(",")
-        start = cal.cell(row, start_col).value
-        end = cal.cell(row, end_col).value
+        summary = row[name_col]
+        desc = row[desc_col]
+        caregivers = row[caregivers_col].split(",")
+        weekdays = row[weekdays_col].split(",")
+        start = row[start_col]
+        end = row[end_col]
 
         event_tmpl = EventTemplate(event_key, summary, desc, caregivers, weekdays, start, end)
         print("Found template: {}".format(event_tmpl))
         events_list.append(event_tmpl)
-        sleep(10)
-        row = row + 1
 
     return events_list
 
 
-def get_caregivers(cal):
+def get_caregivers(all_cells):
     """Reads caregiver codes and names to use for custody days and events.
     """
-    caregivers_cell = cal.find('Caregivers')
+    row_cg, col_cg = find_cell(all_cells, 'Caregivers')
     caregivers_dict = {}
 
-    i = 1
-    while True:
-        next_caregiver_code = cal.cell(caregivers_cell.row + i, caregivers_cell.col).value
-        if next_caregiver_code != "":
-            caregivers_dict[next_caregiver_code] = { "name": cal.cell(caregivers_cell.row + i, caregivers_cell.col + 1).value, "color": cal.cell(caregivers_cell.row + i, caregivers_cell.col + 2).value}
-            i = i + 1
-        else:
+    for row in all_cells[row_cg+1:]:
+        next_caregiver_code = row[col_cg]
+        if next_caregiver_code == "":
             break
+        caregivers_dict[next_caregiver_code] = { "name": row[col_cg + 1], "color": row[col_cg + 2]}
 
     return caregivers_dict
-
-
-def main():
-    "Demo code to read and print data from the calendar"
-
-    calendar_file_name = 'Calendario de custodia compartida Elena'
-    calendar_school_period = '2019-2020'
-
-    cal = open_calendar_worksheet(calendar_file_name, calendar_school_period)
-
-    print("Opened calendar for school period {} from {}".format(calendar_school_period, calendar_file_name))
-
-    # Get number of days with custody
-    # - We substract the cell that is used as legend in the sheet
-    complete_days_A = len(cal.findall('AD')) - 1
-    complete_days_X = len(cal.findall('XD')) - 1
-    school_days_A = len(cal.findall('A')) - 1
-    school_days_X = len(cal.findall('X')) - 1
-
-    print('  A has {} complete days and {} school days'.format(complete_days_A, school_days_A))
-    print('  X has {} complete days and {} school days'.format(complete_days_X, school_days_X))
-
-    print("Monthly distribution")
-    print(json.dumps(read_month(cal, calendar_school_period, 'August'), sort_keys=True, indent=4))
-
-
-def test_get_caregivers():
-    calendar_file_name = 'Calendario de custodia compartida Elena'
-    calendar_school_period = '2019-2020'
-
-    cal = open_calendar_worksheet(calendar_file_name, calendar_school_period)
-    print("Opened calendar for school period {} from {}".format(calendar_school_period, calendar_file_name))
-    print(get_caregivers(cal))
-
-
-def test_get_event_templates():
-    calendar_file_name = 'Calendario de custodia compartida Elena'
-    calendar_school_period = '2019-2020'
-
-    cal = open_calendar_worksheet(calendar_file_name, calendar_school_period)
-    print("Opened calendar for school period {} from {}".format(calendar_school_period, calendar_file_name))
-    for event_tmpl in get_event_templates(cal):
-        print(event_tmpl)
-
-
-if __name__ == "__main__":
-    #main()
-    #test_get_caregivers()
-    test_get_event_templates()
