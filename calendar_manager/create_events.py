@@ -82,8 +82,8 @@ def delete_event(service, event_template, event_date):
     if event_id:
         print("Deleting event '{}' with id {} ...".format(event_template.summary, event_id))
         event_result = service.events().delete(calendarId=CALENDAR, eventId=event_id).execute()
-    else:
-        print("DEBUG: Event '{}' not found. Not deleted.".format(event_template.summary))
+    #else:
+    #    print("DEBUG: Event '{}' not found. Not deleted.".format(event_template.summary))
 
 
 def schedule_events(year, month, custody_days, event_templates, caregivers):
@@ -100,49 +100,16 @@ def schedule_events(year, month, custody_days, event_templates, caregivers):
 
         # Schedule events for templates that match current weekday and caregiver
         for event_tmpl in event_templates:
-            print(event_tmpl)
+            #print(event_tmpl)
             if weekday in event_tmpl.weekdays and caregiver_code in event_tmpl.caregivers:
-                print("DEBUG: {} matches weekday {}".format(event_tmpl.name, weekday))
-                print("DEBUG: {} matches caregiver {}".format(event_tmpl.name, caregiver_code))
+                #print("DEBUG: {} matches weekday {}".format(event_tmpl.name, weekday))
+                #print("DEBUG: {} matches caregiver {}".format(event_tmpl.name, caregiver_code))
                 create_event(cal, event_tmpl, event_date, color)
             else:
-                print("DEBUG: {} does not match weekday {} or caregiver {}".format(event_tmpl.name, weekday, caregiver_code))
+                #print("DEBUG: {} does not match weekday {} or caregiver {}".format(event_tmpl.name, weekday, caregiver_code))
                 delete_event(cal, event_tmpl, event_date)
 
         print("-----------------------------------------------")
-
-
-def schedule_events_from_testdata():
-
-    year  = 2019
-    month = 9
-
-    month_dict = {
-      'days': {
-        16: 'A',
-        17: 'A',
-        18: 'X',
-        19: 'A',
-        20: 'A',
-        21: 'AD',
-        22: 'AD',
-        23: 'X',
-        24: 'XD',
-        25: 'A',
-        26: 'X',
-        27: 'X',
-        28: 'XD',
-        29: 'XD',
-      }
-    }
-
-    calendar_file_name = 'Calendario de custodia compartida Elena'
-    calendar_school_period = '2019-2020'
-
-    cal_sheet = open_calendar_worksheet(calendar_file_name, calendar_school_period)
-    event_templates = get_event_templates(cal_sheet)
-
-    schedule_events(year, month, month_dict['days'], event_templates)
 
 
 def schedule_events_from_spreadsheet(calendar_file_name, calendar_school_period, month_name):
