@@ -53,6 +53,21 @@ def test_read_month():
     assert read_month(all_cells, '2001-2002', 'March').get('weeks')[0].get('week_number') == '9'
     assert read_month(all_cells, '2001-2002', 'March').get('days').get('20') == 'D'
     assert read_month(all_cells, '2001-2002', 'March').get('days').get('24') == 'M'
+    duplicate_cells = [
+        ['April','Mo','Tu','We','Th','Fr','Sa','Su'],
+        ['14','30','31','1','2','3','4','5'],
+        [' ','D','D','M','M','D','D','M'],
+        ['15','6','7','8','9','10','11','12'],
+        [' ','D','D','M','D','D','D','D'],
+        ['16','9','10','11','12','13','14','15'],
+        [' ','M','M','D','M','M','M','M'],
+        ['17','16','17','18','19','20','21','22'],
+        ['Party uncle Tom','D','D','M','D','D','D','D'],
+        ['18','23','24','25','26','27','28','29'],
+        [' ','M','M','D','M','M','M','M']
+    ]
+    with pytest.raises(ValueError):
+        read_month(duplicate_cells, '2001-2002', 'April')
 
 def test_get_event_templates():
     all_cells = [

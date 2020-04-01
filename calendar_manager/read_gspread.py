@@ -2,19 +2,8 @@ import json
 import gspread
 import calendar
 from oauth2client.service_account import ServiceAccountCredentials
-from calendar_manager.events import EventTemplate
+from events import EventTemplate
 
-
-def merge_weeks(dict_list):
-    """
-    Given any number of dicts, shallow copy and merge into a new dict,
-    precedence goes to key value pairs in latter dicts.
-    """
-    result = {}
-    for dictionary in dict_list:
-        result.update(dictionary)
-    del result['week_number']
-    return result
 
 
 def open_calendar_worksheet(calendar_file_name, calendar_school_period):
@@ -93,7 +82,7 @@ def read_month(all_cells, calendar_school_period, month_name):
     print(calendar.month(year, month_number))
 
     # Initiliaze data structure
-    month_dict = { 'month': month_number, 'year': year, 'weeks': [] }
+    month_dict = { 'month': month_number, 'year': year, 'weeks': [], 'days': {}, 'caregivers': {} }
     month_row, month_col = find_cell(all_cells, month_name)
 
     for week_idx in range(0,5):
@@ -103,13 +92,13 @@ def read_month(all_cells, calendar_school_period, month_name):
         for day_idx in range(1,8):
             day_number = all_cells[week_row][month_col + day_idx]
             if day_number != '' and day_number != ' ':
+                if day_number in month_dict['days']:
+                    raise ValueError(f"Day number {day_number} already defined.")
                 day_caregiver = all_cells[week_row + 1][month_col + day_idx]
                 week_dict[day_number] = day_caregiver
+                month_dict['days'][day_number] = day_caregiver
         month_dict['weeks'].append(week_dict)
 
-    month_dict['days'] = merge_weeks(month_dict['weeks'])
-
-    month_dict['caregivers'] = {}
     for day, caregiver in month_dict['days'].items():
         if caregiver in month_dict['caregivers'].keys():
             month_dict['caregivers'][caregiver] += 1
