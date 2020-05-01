@@ -11,6 +11,7 @@ gspread = "*"
 pyopenssl = "*"
 click = "*"
 pytest = "*"
+calendar-manager = {editable = true,path = "."}
 
 [requires]
-python_version = "2.7"
+python_version = "3.7"

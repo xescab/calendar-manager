@@ -2,22 +2,28 @@ import json
 import gspread
 import calendar
 from oauth2client.service_account import ServiceAccountCredentials
-from events import EventTemplate
+from calendar_manager.event_template import EventTemplate
 
 
+def get_all_cells_from_spreadsheet(credentials_filename, spreadsheet_filename, worksheet):
+    """Returns all cells from a Google spreadsheet worksheet.
+    
+    Uses credentials from local file `credentials_filename` to connect to Google APIs.
 
-def open_calendar_worksheet(calendar_file_name, calendar_school_period):
-    """Returns a gspread worksheet from file `calendar_file_name` containing
-    a calendar for `calendar_school_period` using credentials in `creds.json`.
+    Opens `worksheet` from spreadsheet file named `spreadsheet_filename`.
     """
     scope = ['https://spreadsheets.google.com/feeds',
              'https://www.googleapis.com/auth/drive']
 
-    credentials = ServiceAccountCredentials.from_json_keyfile_name('creds.json', scope)
+    print(f"Authorizing access to Google Sheets with '{credentials_filename}' ...")
+    creds = ServiceAccountCredentials.from_json_keyfile_name(credentials_filename, scope)
 
-    gc = gspread.authorize(credentials)
+    gc = gspread.authorize(creds)
 
-    return gc.open(calendar_file_name).worksheet(calendar_school_period)
+    sheet = gc.open(spreadsheet_filename).worksheet(worksheet)
+
+    print(f"Getting all values from '{spreadsheet_filename}:{worksheet}' ...")
+    return sheet.get_all_values()
 
 
 def get_month_number(month_name):
@@ -46,7 +52,7 @@ def find_cell(all_cells, keyword):
         if keyword in row:
             row_idx = all_cells.index(row)
             col_idx = row.index(keyword)
-            print(f"Found {keyword} at row={row_idx}, column={col_idx}")
+            #print(f"DEBUG Found {keyword} at row={row_idx}, column={col_idx}")
             return (row_idx, col_idx)
 
     raise ValueError(f"Cell with value '{keyword}' not found on sheet")
@@ -78,8 +84,8 @@ def read_month(all_cells, calendar_school_period, month_name):
     year = int(get_year(calendar_school_period, month_name))
 
     # Informative
-    print("Getting {} custody days from spreadsheet ...".format(month_name))
-    print(calendar.month(year, month_number))
+    #print("Getting {} custody days from spreadsheet ...".format(month_name))
+    #print(calendar.month(year, month_number))
 
     # Initiliaze data structure
     month_dict = { 'month': month_number, 'year': year, 'weeks': [], 'days': {}, 'caregivers': {} }
@@ -137,7 +143,7 @@ def get_event_templates(all_cells):
         end = row[end_col]
 
         event_tmpl = EventTemplate(event_key, summary, desc, caregivers, weekdays, start, end)
-        print("Found template: {}".format(event_tmpl))
+        #print("DEBUG Found template: {}".format(event_tmpl))
         events_list.append(event_tmpl)
 
     return events_list
