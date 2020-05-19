@@ -30,6 +30,9 @@ def test_read_month():
     # 5 weeks are expected
     # 7 weekdays are expected
     all_cells = [
+        ['Caregivers','Name','Color'],
+        ['D','Dad','3'],
+        ['M','Mum','5'],
         ['March','Mo','Tu','We','Th','Fr','Sa','Su'],
         ['9','','','','','','','1'],
         [' ','','','','','','','M'],
@@ -66,6 +69,24 @@ def test_read_month():
     ]
     with pytest.raises(ValueError):
         read_month(duplicate_cells, '2001-2002', 'April')
+    all_cells_missing_caregiver = [
+        ['Caregivers','Name','Color'],
+        ['D','Dad','3'],
+        ['M','Mum','5'],
+        ['March','Mo','Tu','We','Th','Fr','Sa','Su'],
+        ['9','','','','','','','1'],
+        [' ','','','','','','','M'],
+        ['10','2','3','4','5','6','7','8'],
+        [' ','D','D','M','D','D','D','D'],
+        ['11','9','10','11','12','13','14','15'],
+        [' ','M','M','D','M','X','M','M'],
+        ['12','16','17','18','19','20','21','22'],
+        ['Party uncle Tom','D','D','M','D','D','D','D'],
+        ['13','23','24','25','26','27','28','29'],
+        [' ','M','M','D','M','M','M','M']
+    ]
+    with pytest.raises(ValueError): # caregiver X was not declared
+        read_month(all_cells_missing_caregiver, '2001-2002', 'April')
 
 def test_get_event_templates():
     all_cells = [

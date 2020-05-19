@@ -105,11 +105,15 @@ def read_month(all_cells, calendar_school_period, month_name):
                 month_dict['days'][day_number] = day_caregiver
         month_dict['weeks'].append(week_dict)
 
+
+    for caregiver in get_caregivers(all_cells).keys():
+        month_dict['caregivers'][caregiver] = 0
+
     for day, caregiver in month_dict['days'].items():
         if caregiver in month_dict['caregivers'].keys():
             month_dict['caregivers'][caregiver] += 1
         else:
-            month_dict['caregivers'][caregiver] = 1
+            raise ValueError(f"Caregiver {caregiver} not declared.")
 
     return month_dict
 
