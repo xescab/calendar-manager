@@ -1,4 +1,6 @@
 import pytest
+import mock
+import datetime
 from calendar_manager.event_template import EventTemplate
 from calendar_manager.event_scheduler import EventScheduler
 
@@ -118,14 +120,21 @@ def test_list_upcoming_events_from_today():
 
 def test_list_upcoming_events_from_date():
     # At least 1 result should be listed
-    # FIXME 3 according to current events on calendar!
-    assert len(test_scheduler.list_upcoming_events(start_date='2020-04-30')) == 3
+    # FIXME 4 according to current events on calendar!
+    assert len(test_scheduler.list_upcoming_events(start_date='2020-04-30')) == 4
 
 def test_list_events_to_be_scheduled(capsys):
-    test_scheduler.list_events_to_be_scheduled()
-    captured = capsys.readouterr()
-    assert "Sun 2020-04-19: 12:00:00 Sunday service" in captured.out
-    assert "Tue 2020-04-21: All day Work day, 17:00:00 Sports" in captured.out
-    assert "Wed 2020-04-22: All day Work day, 17:00:00 Sports" not in captured.out
+    with mock.patch('calendar_manager.event_scheduler.get_today', return_value=datetime.date(2020, 4, 19)):
+        test_scheduler.list_events_to_be_scheduled()
+        captured = capsys.readouterr()
+        assert "Sun 2020-04-19: 12:00:00 Sunday service" in captured.out
+        assert "Tue 2020-04-21: All day Work day, 17:00:00 Sports" in captured.out
+        assert "Wed 2020-04-22: All day Work day, 17:00:00 Sports" not in captured.out
+        assert "Tue 2020-04-14: All day Work day, 17:00:00 Sports" not in captured.out
+    with mock.patch('calendar_manager.event_scheduler.get_today', return_value=datetime.date(2020, 4, 13)):
+        test_scheduler.list_events_to_be_scheduled()
+        captured = capsys.readouterr()
+        assert "Tue 2020-04-14: All day Work day, 17:00:00 Sports" in captured.out
+
 
 # TODO: add more tests!

@@ -12,6 +12,7 @@ pyopenssl = "*"
 click = "*"
 pytest = "*"
 calendar-manager = {editable = true,path = "."}
+mock = "*"
 
 [requires]
 python_version = "3.7"

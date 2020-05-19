@@ -5,6 +5,10 @@ from googleapiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
 
 
+# Test helper
+def get_today():
+   return date.today()
+
 
 class EventScheduler():
     """EventScheduler connects to Google Calendar service using credentials 
@@ -93,6 +97,7 @@ class EventScheduler():
         print("starts at: ", event_result['start'])
         print("ends at: ", event_result['end'])
         #print("DEBUG: ", event_result)
+        return event_result
 
 
     def delete_event(self, event_template, event_date):
@@ -102,9 +107,10 @@ class EventScheduler():
 
         if event_id:
             print("Deleting event '{}' with id {} ...".format(event_template.summary, event_id))
-            self.calendar_service.events().delete(calendarId=self.calendar_id, eventId=event_id).execute()
-        #else:
+            return self.calendar_service.events().delete(calendarId=self.calendar_id, eventId=event_id).execute()
+        else:
         #    print("DEBUG: Event '{}' not found. Not deleted.".format(event_template.summary))
+            return None
 
 
     def schedule_events(self):
@@ -119,7 +125,11 @@ class EventScheduler():
             color = self.date_types[datetype]['color']
             weekday = event_date.weekday()
 
-            print(f"Scheduling events for {calendar.day_abbr[weekday]} {event_date} ({datetype_desc}) ...")
+            if event_date >= get_today():
+                print(f"Scheduling events for {calendar.day_abbr[weekday]} {event_date} ({datetype_desc}) ...")
+            else:
+                print(f"Skipping passed events for {calendar.day_abbr[weekday]} {event_date}.")
+                continue
 
             # Schedule events for templates that match current weekday and datetype
             # and delete those that no longer match
@@ -169,8 +179,9 @@ class EventScheduler():
             event_date = date(year, month, int(day))
             weekday = event_date.weekday()
 
-            events = ", ".join(f"{tmpl.start_time} {tmpl.summary}" for tmpl in self.event_templates if weekday in tmpl.weekdays and dtype in tmpl.datetypes)
-            print(f"{calendar.day_abbr[weekday]} {event_date}: {events}")
+            if event_date >= get_today():
+                events = ", ".join(f"{tmpl.start_time} {tmpl.summary}" for tmpl in self.event_templates if weekday in tmpl.weekdays and dtype in tmpl.datetypes)
+                print(f"{calendar.day_abbr[weekday]} {event_date}: {events}")
 
 
     def print_datetype_distribution(self):
