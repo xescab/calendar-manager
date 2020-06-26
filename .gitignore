@@ -128,5 +128,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Settings filess
+# Settings files
 *.json
+
+# MacBook files
+.DS_Store
