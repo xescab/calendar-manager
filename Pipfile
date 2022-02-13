@@ -15,4 +15,4 @@ calendar-manager = {editable = true,path = "."}
 mock = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.9"
